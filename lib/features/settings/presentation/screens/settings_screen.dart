@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/services/sound_service.dart';
+import '../../../../core/widgets/med_streak_app_bar.dart';
 import '../../../../features/game/domain/models/medical_parameter.dart';
 import '../../../../features/settings/application/providers/settings_provider.dart';
 
@@ -12,9 +14,13 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
+    final soundEnabled = ref.watch(soundEnabledProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings'), centerTitle: true),
+      appBar: const MedStreakAppBar(
+        title: 'Settings',
+        showBackButton: true,
+      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -56,6 +62,23 @@ class SettingsScreen extends ConsumerWidget {
                 onChanged: (value) =>
                     ref.read(settingsProvider.notifier).toggleNotifications(),
                 icon: Icons.notifications,
+              ),
+              const SizedBox(height: 16),
+
+              // Sound Effects Toggle
+              _buildSettingToggle(
+                context: context,
+                title: 'Sound Effects',
+                subtitle: 'Enable sound effects for interactions',
+                value: soundEnabled,
+                onChanged: (value) {
+                  // Play sound effect if enabling sounds
+                  if (value) {
+                    ref.read(soundServiceProvider).playButtonSound(true);
+                  }
+                  ref.read(soundEnabledProvider.notifier).setSoundEnabled(value);
+                },
+                icon: Icons.volume_up,
               ),
               const SizedBox(height: 24),
 

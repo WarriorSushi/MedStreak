@@ -56,39 +56,85 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      body: Center(
+      // Gradient background as requested (#ffc439 to #fc4b91)
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFFFC439), Color(0xFFFC4B91)],
+          ),
+        ),
+        child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Logo animation with improved animation file
-            Lottie.asset(
-              'assets/lottie/logoanimation.json', // Using the cleaner logo animation
-              controller: _animationController,
-              height: 240, // Slightly larger for better visibility
-              width: 240,
-              fit: BoxFit.contain, // Ensure animation fits properly
-              repeat: false, // Play once
-              animate: true,
+            // Stack to show both logo and confetti animations
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                // Confetti animation in background
+                Lottie.asset(
+                  'assets/lottie/confetti lottie.json',
+                  height: 300,
+                  width: 300,
+                  fit: BoxFit.contain,
+                  repeat: true,
+                  animate: true,
+                ),
+                // Logo animation on top
+                Lottie.asset(
+                  'assets/lottie/logoanimation.json',
+                  controller: _animationController,
+                  height: 240,
+                  width: 240,
+                  fit: BoxFit.contain,
+                  repeat: false,
+                  animate: true,
+                ),
+              ],
             ),
             const SizedBox(height: 32),
 
-            // App name
-            Text(
-              'MedStreak',
-              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+            // App name with two-color styling using Nunito font
+            RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: 'Med',
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontSize: 42,
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  TextSpan(
+                    text: 'Streak',
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontSize: 42,
+                      color: Colors.green.shade900,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 8),
 
-            // Tagline
+            // Tagline with adjusted color for better visibility on gradient
             Text(
               'Master Medical Parameters with Confidence',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(color: Colors.white70),
+              style: TextStyle(
+                fontFamily: 'Nunito',
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 48),
 
@@ -96,6 +142,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             const CircularProgressIndicator(color: Colors.white),
           ],
         ),
+      ),
       ),
     );
   }

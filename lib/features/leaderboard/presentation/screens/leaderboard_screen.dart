@@ -183,11 +183,31 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Added gradient app bar with the requested colors #ffc439 and #fc4b91
       appBar: AppBar(
-        title: const Text('Leaderboard'),
+        title: const Text('Leaderboard', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFFFC439), Color(0xFFFC4B91)],
+            ),
+          ),
+        ),
+        // Add back button to return to main menu
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         bottom: TabBar(
           controller: _tabController,
+          indicatorColor: Colors.white,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
           tabs: const [
             Tab(text: 'Daily'),
             Tab(text: 'Weekly'),

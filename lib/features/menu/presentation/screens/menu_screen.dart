@@ -70,21 +70,56 @@ class MenuScreen extends ConsumerWidget {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // App bar with logo
+          // App bar with Lottie background and large MedStreak text
           SliverAppBar(
             expandedHeight: 200,
             pinned: true,
+            backgroundColor: Colors.transparent,
             flexibleSpace: FlexibleSpaceBar(
-              title: const Text('MedStreak'),
-              background: Container(
-                color: Theme.of(context).colorScheme.primary,
-                child: Center(
-                  child: Lottie.asset(
-                    'assets/lottie/logo animation.json',
-                    height: 120,
-                    width: 120,
+              // No title in the app bar, as we'll overlay our own larger text
+              title: null,
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Lottie animation as background
+                  Lottie.asset(
+                    'assets/lottie/mainpage_topbanner_lottie.json',
+                    fit: BoxFit.cover,
                   ),
-                ),
+                  // Centered large MedStreak text
+                  Center(
+                    child: FractionallySizedBox(
+                      widthFactor: 0.7, // Takes up 70% of the width as requested
+                      child: RichText(
+                        textAlign: TextAlign.center,
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: 'Med',
+                              style: TextStyle(
+                                fontFamily: 'Nunito',
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 36, // Much larger text
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                            TextSpan(
+                              text: 'Streak',
+                              style: TextStyle(
+                                fontFamily: 'Nunito',
+                                color: Colors.green.shade900,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 36, // Much larger text
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             actions: [

@@ -10,7 +10,15 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(title: const Text('My Profile'), centerTitle: true),
+      appBar: AppBar(
+        title: const Text('My Profile'), 
+        centerTitle: true,
+        // Add back button to return to main menu
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
       body: SingleChildScrollView(
         child: Column(
           children: [

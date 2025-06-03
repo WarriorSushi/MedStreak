@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../../../core/router/app_router.dart';
+import '../../../../core/services/preferences_service.dart';
 
 /// Model class for onboarding page data
 class OnboardingPage {
@@ -191,23 +192,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  /// Navigate to the login screen
-  void _goToLogin() {
+  /// Navigate to the login screen and mark onboarding as seen
+  void _goToLogin() async {
     try {
-      // Use go method instead of goNamed for more reliable navigation
-      context.go(AppRoute.login.path);
+      // Mark onboarding as seen in preferences
+      final preferencesService = PreferencesService();
+      await preferencesService.setHasSeenOnboarding(true);
+      
+      // Navigate to login screen if still mounted
+      if (mounted) {
+        // Use go method instead of goNamed for more reliable navigation
+        context.go(AppRoute.login.path);
+      }
     } catch (e) {
       // Log any navigation errors
       print('Navigation error: $e');
-      // Attempt to navigate again with a different method
-      try {
-        context.pushNamed(AppRoute.login.name);
-      } catch (e2) {
-        // As a last resort, use Navigator directly
-        if (mounted) {
-          Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-        }
-      }
     }
   }
 }

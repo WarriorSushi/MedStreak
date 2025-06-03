@@ -4,8 +4,10 @@ import 'package:flutter/physics.dart'; // Add physics package for spring animati
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 
+import '../../../../core/services/sound_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../features/game/domain/models/medical_parameter.dart';
+import '../../../../features/game/presentation/widgets/card_trail_effect.dart';
 import '../../../../features/settings/application/providers/settings_provider.dart';
 
 /// Enum representing the different game modes
@@ -34,6 +36,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
   late Animation<Offset> _flyOffAnimation;
   late AnimationController _shakeController; // Wrong answer animation
   late Animation<double> _shakeAnimation;
+  
+  // Sound service for sound effects
+  late SoundService _soundService;
 
   // Game state variables
   final List<MedicalParameterCase> _cases = [];
@@ -44,12 +49,16 @@ class _GameScreenState extends ConsumerState<GameScreen>
   String _errorText = ''; // Text to show at bottom of card for errors
 
   // Dragging state
-  double _dragPosition = 0;
-  double _dragVerticalPosition = 0; // Track vertical dragging for swipe down
+  Offset _dragPosition = Offset.zero; // Track both x and y position
+  Offset _dragVelocity = Offset.zero; // Track velocity for flick gestures
 
   @override
   void initState() {
     super.initState();
+
+    // Initialize sound service
+    _soundService = ref.read(soundServiceProvider);
+    _soundService.initialize();
 
     // Initialize entry animation controller (cards fly in from top)
     _animationController = AnimationController(
@@ -186,55 +195,109 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
   /// Check if the swipe direction is correct for the current case
   void _checkAnswer(String direction) {
-    if (_currentIndex >= _cases.length || _isAnimating) return;
+    if (_isAnimating) return;
 
-    // Set animating flag to prevent multiple swipes
-    _isAnimating = true;
+    setState(() {
+      _isAnimating = true;
+    });
 
-    final currentCase = _cases[_currentIndex];
-    final classification = currentCase.getValueClassification();
+    // Get current case
+    final MedicalParameterCase currentCase = _cases[_currentIndex];
+    String correctDirection = '';
 
-    bool isCorrect = false;
+    // Get normal range for current sex context
+    final sexContext = ref.read(sexContextProvider);
+    final normalRange = currentCase.parameter.getNormalRangeForSex(sexContext);
+    final lowThreshold = normalRange['low']!;
+    final highThreshold = normalRange['high']!;
 
-    // Check if the classification matches the swipe direction
-    // Note: Changed 'up' to 'down' for NORMAL values
-    if (classification == 'LOW' && direction == 'left') {
-      isCorrect = true;
-    } else if (classification == 'NORMAL' && direction == 'down') {
-      // Changed to 'down'
-      isCorrect = true;
-    } else if (classification == 'HIGH' && direction == 'right') {
-      isCorrect = true;
+    // Determine correct answer
+    if (currentCase.value < lowThreshold) {
+      correctDirection = 'left'; // Low
+    } else if (currentCase.value > highThreshold) {
+      correctDirection = 'right'; // High
+    } else {
+      correctDirection = 'down'; // Normal
     }
 
-    // Update streak (no score)
-    if (isCorrect) {
-      _streak++;
-      _errorText = '';
+    // Check if direction matches
+    _isCorrect = direction == correctDirection;
 
-      // Fly off animation for correct answer
+    // Apply appropriate animation/feedback
+    if (_isCorrect) {
+      // Correct answer - play sound if enabled
+      final soundEnabled = ref.read(soundEnabledProvider);
+      if (soundEnabled) {
+        _soundService.playCorrectSwipeSound(soundEnabled);
+      }
+
+      // Update streak for normal mode only
+      if (widget.gameMode == GameMode.normal) {
+        setState(() {
+          _streak++;
+        });
+      }
+
+      // Set up the fly off animation based on the direction swiped
+      Offset flyOffDirection;
+      switch (direction) {
+        case 'left':
+          flyOffDirection = const Offset(-2.0, 0); // Fly left
+          break;
+        case 'right':
+          flyOffDirection = const Offset(2.0, 0); // Fly right
+          break;
+        case 'down':
+          flyOffDirection = const Offset(0, 2.0); // Fly down
+          break;
+        default:
+          flyOffDirection = const Offset(0, -2.0); // Default fly up
+      }
+
+      // Update the fly-off animation with the correct direction
+      _flyOffAnimation = Tween<Offset>(
+        begin: _dragPosition,
+        end: flyOffDirection,
+      ).animate(
+        CurvedAnimation(parent: _flyOffController, curve: Curves.easeOutQuint),
+      );
+
+      // Fly off animation
+      _flyOffController.reset();
       _flyOffController.forward().then((_) {
         if (mounted) {
+          setState(() {
+            _isAnimating = false;
+            _errorText = '';
+            _dragPosition = Offset.zero;
+          });
           _moveToNextCard();
         }
       });
     } else {
-      // Reset streak on wrong answer
-      _streak = 0;
-      _errorText = 'Incorrect! The value is $classification';
+      // Wrong answer
+      final soundEnabled = ref.read(soundEnabledProvider);
+      if (soundEnabled) {
+        _soundService.playWrongSwipeSound(soundEnabled);
+      }
 
-      // Shake animation for wrong answer
-      _shakeController.forward().then((_) {
-        if (mounted) {
-          _shakeController.reset();
-          _isAnimating = false; // Allow interaction again
-        }
-      });
+      // Reset streak for normal mode
+      if (widget.gameMode == GameMode.normal) {
+        setState(() {
+          _streak = 0;
+        });
+      }
+
+      // Show error text for practice mode
+      if (widget.gameMode == GameMode.practice) {
+        setState(() {
+          _errorText = 'This value is ${_getCorrectAnswerText(correctDirection)}';
+        });
+      }
+
+      // Snap back to center with a shake
+      _snapCardBackToCenter();
     }
-
-    setState(() {
-      _isCorrect = isCorrect;
-    });
   }
 
   /// Move to the next card after current card is dismissed
@@ -247,6 +310,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
       // Reset animation controllers
       _flyOffController.reset();
       _animationController.reset();
+      
+      // Reset drag position to center for new card
+      _dragPosition = Offset.zero;
 
       // Generate new cases if we've gone through all of them
       if (_currentIndex >= _cases.length) {
@@ -259,194 +325,228 @@ class _GameScreenState extends ConsumerState<GameScreen>
     });
   }
 
+  /// Calculate angle in degrees from an offset (0 degrees is right, 90 is down)
+  double _getAngleFromOffset(Offset offset) {
+    // Calculate the angle in radians and convert to degrees
+    final double radians = atan2(offset.dy, offset.dx);
+    return radians * (180 / pi); // Convert to degrees
+  }
+  
+  /// Process a flick gesture based on velocity
+  /// NOTE: This is an alternative implementation currently not in use
+  /// but kept for reference in case the physics-based approach needs adjustment
+  // ignore: unused_element
+  void _processFlickGesture(Offset velocity) {
+    // Define threshold for flick detection
+    const flickThreshold = 500.0;
+    final absX = velocity.dx.abs();
+    final absY = velocity.dy.abs();
+
+    if (absX > flickThreshold && absX > absY) {
+      // Horizontal flick - determine direction
+      if (velocity.dx > 0) {
+        _checkAnswer('right'); // Right flick = HIGH
+      } else {
+        _checkAnswer('left'); // Left flick = LOW
+      }
+    } else if (absY > flickThreshold && absY > absX) {
+      // Vertical flick - only care about downward for normal
+      if (velocity.dy > 0) {
+        _checkAnswer('down'); // Down flick = NORMAL
+      }
+    }
+  }
+  
+  /// Get text description of the correct answer
+  String _getCorrectAnswerText(String direction) {
+    switch (direction) {
+      case 'left':
+        return 'LOW';
+      case 'right':
+        return 'HIGH';
+      case 'down':
+        return 'NORMAL';
+      default:
+        return '';
+    }
+  }
+  
   @override
   Widget build(BuildContext context) {
-    // Get the current unit system from settings
+    // Get current settings from providers
     final unitSystem = ref.watch(unitSystemProvider);
-
-    // Get the current sex context from settings
     final sexContext = ref.watch(sexContextProvider);
 
     return Scaffold(
-      // Add gradient background
+      // Dark gradient background for normal mode, regular for practice mode
       backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
-      // Add exit button to AppBar
+      // Semi-transparent app bar with back button
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        title: Text(
+          widget.gameMode == GameMode.normal ? 'Normal Mode' : 'Practice Mode',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
+        // Add back button to return to main menu
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text(
-          widget.gameMode == GameMode.normal ? 'MedStreak' : 'Practice Mode',
-        ),
-        actions: [
-          // Unit system toggle button
-          IconButton(
-            icon: Icon(
-              unitSystem == UnitSystem.si ? Icons.science : Icons.biotech,
-            ),
-            tooltip:
-                'Toggle ${unitSystem == UnitSystem.si ? "Conventional" : "SI"} Units',
-            onPressed: () {
-              ref.read(settingsProvider.notifier).toggleUnitSystem();
-            },
-          ),
-
-          // Sex context selector dropdown - Only show in practice mode
-          if (widget.gameMode == GameMode.practice)
-            PopupMenuButton<SexContext>(
-              icon: Icon(_getSexContextIcon(sexContext)),
-              tooltip: 'Change Reference Ranges',
-              onSelected: (SexContext value) {
-                ref.read(settingsProvider.notifier).setSexContext(value);
-                // Regenerate cases with new sex context
-                _generateTestCases();
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: SexContext.male,
-                  child: Row(
-                    children: [
-                      Icon(Icons.male),
-                      SizedBox(width: 8),
-                      Text('Male Ranges'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: SexContext.female,
-                  child: Row(
-                    children: [
-                      Icon(Icons.female),
-                      SizedBox(width: 8),
-                      Text('Female Ranges'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: SexContext.neutral,
-                  child: Row(
-                    children: [
-                      Icon(Icons.people),
-                      SizedBox(width: 8),
-                      Text('Neutral Ranges'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-        ],
       ),
       body: Container(
-        // Gradient background
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.blue.shade100, Colors.purple.shade50],
-          ),
-        ),
-        child: Column(
-          children: [
-            // Only show streak in top-right during gameplay
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 90, 16, 0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+        // Dark gradient background for normal mode as requested
+        decoration: widget.gameMode == GameMode.normal
+            ? const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xFF222831), // Dark navy
+                    Color(0xFF131B28), // Very dark blue
+                    Color(0xFF003B2F), // Dark teal
+                  ],
+                ),
+              )
+            : null, // No gradient for practice mode
+        child: SafeArea(
+          child: Stack(
+            children: [
+              // Card trail effect
+              CardTrailEffect(
+                dragPosition: _dragPosition,
+                isActive: _dragPosition != Offset.zero,
+              ),
+              
+              // Main content
+              Column(
                 children: [
-                  // Streak display with animation
-                  if (_streak > 0)
-                    Row(
+                  // Only show streak in top-right during gameplay
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 90, 16, 0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Lottie.asset(
-                          'assets/lottie/streak_flame_level_1.json',
-                          height: 40,
-                          repeat: true,
-                        ),
-                        const SizedBox(width: 4),
-                        Column(
-                          children: [
-                            Text(
-                              'Streak',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            Text(
-                              _streak.toString(),
-                              style: Theme.of(context).textTheme.headlineMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.normalValueColor,
+                        // Streak display with animation
+                        if (_streak > 0)
+                          Row(
+                            children: [
+                              Lottie.asset(
+                                'assets/lottie/streak_flame_level_1.json',
+                                height: 40,
+                                repeat: true,
+                              ),
+                              const SizedBox(width: 4),
+                              Column(
+                                children: [
+                                  Text(
+                                    'Streak',
+                                    style: Theme.of(context).textTheme.titleMedium,
                                   ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                ],
-              ),
-            ),
-
-            // Game instructions - updated for swipe down for normal
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 8.0,
-              ),
-              child: Text(
-                'Swipe LEFT for LOW, DOWN for NORMAL, RIGHT for HIGH',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-            ),
-
-            // Card area
-            Expanded(
-              child: _cases.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
-                  : Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Card
-                        if (_currentIndex < _cases.length)
-                          _buildParameterCard(
-                            _cases[_currentIndex],
-                            unitSystem,
-                            sexContext,
+                                  Text(
+                                    _streak.toString(),
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color: widget.gameMode == GameMode.normal
+                                          ? Colors.yellow.shade300 // Neon yellow for normal mode
+                                          : Theme.of(context).textTheme.headlineSmall?.color,
+                                      shadows: widget.gameMode == GameMode.normal
+                                          ? [
+                                              Shadow(
+                                                color: Colors.yellow.shade100.withAlpha(128),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 0),
+                                              ),
+                                            ]
+                                          : null,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                       ],
                     ),
-            ),
-
-            // Swipe direction indicators
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildSwipeIndicator('LOW', Colors.red, Icons.arrow_back),
-                  _buildSwipeIndicator(
-                    'NORMAL',
-                    Colors.green,
-                    Icons.arrow_downward,
                   ),
-                  _buildSwipeIndicator(
-                    'HIGH',
-                    Colors.orange,
-                    Icons.arrow_forward,
+
+                  // Game instructions - updated for swipe down for normal
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
+                    child: Text(
+                      'Swipe LEFT for LOW, DOWN for NORMAL, RIGHT for HIGH',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  ),
+
+                  // Card area
+                  Expanded(
+                    child: _cases.isEmpty
+                        ? const Center(child: CircularProgressIndicator())
+                        : Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Card
+                              if (_currentIndex < _cases.length)
+                                _buildParameterCard(
+                                  _cases[_currentIndex],
+                                  unitSystem,
+                                  sexContext,
+                                ),
+                            ],
+                          ),
+                  ),
+
+                  // Swipe direction indicators
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        // Low indicator
+                        _buildSwipeIndicator(
+                          'Low', 
+                          widget.gameMode == GameMode.normal
+                            ? const Color(0xFF00FFFF) // Cyan neon
+                            : Colors.blue,
+                          Icons.arrow_back
+                        ),
+                        // Normal indicator
+                        _buildSwipeIndicator(
+                          'Normal', 
+                          widget.gameMode == GameMode.normal
+                            ? const Color(0xFF00FF00) // Green neon
+                            : Colors.green,
+                          Icons.arrow_downward
+                        ),
+                        // High indicator
+                        _buildSwipeIndicator(
+                          'High', 
+                          widget.gameMode == GameMode.normal
+                            ? const Color(0xFFFF2E63) // Pink neon
+                            : Colors.red,
+                          Icons.arrow_forward
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
-
-
 
   /// Build the parameter card with draggable functionality
   Widget _buildParameterCard(
@@ -454,66 +554,115 @@ class _GameScreenState extends ConsumerState<GameScreen>
     UnitSystem unitSystem,
     SexContext sexContext,
   ) {
-    // Get the parameter and value in the current unit system
     final parameter = paramCase.parameter;
-    final value = paramCase.getValueInUnitSystem(unitSystem);
+    final value = paramCase.value;
 
-    // Format the value with appropriate precision
-    final valueStr = _formatValue(value);
-
-    // Normal range in the current unit system
+    // Get the normal range for the current sex context
     final normalRange = parameter.getNormalRangeForSex(sexContext);
-    final lowValue = unitSystem == UnitSystem.si
-        ? normalRange['low']!
-        : parameter.convertSItoConventional(normalRange['low']!);
-    final highValue = unitSystem == UnitSystem.si
-        ? normalRange['high']!
-        : parameter.convertSItoConventional(normalRange['high']!);
+    final lowThreshold = normalRange['low']!;
+    final highThreshold = normalRange['high']!;
+    
+    // Get formatted value and reference values
+    final valueStr = _formatValue(value);
+    final lowValueStr = _formatValue(lowThreshold);
+    final highValueStr = _formatValue(highThreshold);
+    
+    // Set text colors based on game mode
+    final Color textColor = widget.gameMode == GameMode.normal 
+        ? Colors.white // White text for dark background in normal mode
+        : Colors.black87; // Dark text for light background in practice mode
 
-    // Format normal range values
-    final lowValueStr = _formatValue(lowValue);
-    final highValueStr = _formatValue(highValue);
+    // We already have the normal range values defined above
+    // No need for additional variables
 
     return GestureDetector(
-      onHorizontalDragUpdate: (details) {
+      // Using Pan gesture detector to handle all directions at once
+      onPanStart: (details) {
+        if (_isAnimating) return;
+        _dragVelocity = Offset.zero; // Reset velocity on new drag
+      },
+      onPanUpdate: (details) {
         if (_isAnimating) return; // Prevent interaction during animations
         setState(() {
-          _dragPosition += details.delta.dx;
-          // Limit the drag distance
-          _dragPosition = _dragPosition.clamp(-200.0, 200.0);
+          // Update drag position
+          _dragPosition += details.delta;
+          
+          // Store velocity for flick gesture
+          _dragVelocity = details.delta * 0.8 + _dragVelocity * 0.2; // Weighted average for smoother velocity
+          
+          // Limit the drag distance with a circular boundary (allows any angle)
+          final double distance = _dragPosition.distance;
+          if (distance > 220.0) {
+            _dragPosition = _dragPosition * (220.0 / distance);
+          }
         });
       },
-      onHorizontalDragEnd: (details) {
+      onPanEnd: (details) {
         if (_isAnimating) return; // Prevent interaction during animations
         
-        // Add smooth spring animation when returning to center
-        if (_dragPosition < -100) {
-          // Swiped left - LOW
-          _checkAnswer('left');
-        } else if (_dragPosition > 100) {
-          // Swiped right - HIGH
-          _checkAnswer('right');
-        } else {
-          // Animate back to center with spring physics
-          _snapCardBackToCenter();
+        // Get the total velocity for flick detection
+        final double flickVelocity = _dragVelocity.distance;
+        final double dragDistance = _dragPosition.distance;
+        final double dragAngle = _getAngleFromOffset(_dragPosition);
+        
+        // Play swipe sound if enabled
+        final soundEnabled = ref.read(soundEnabledProvider);
+        if (soundEnabled && (dragDistance > 100 || flickVelocity > 15)) {
+          _soundService.playSound('swipe', soundEnabled);
         }
-      },
-      onVerticalDragUpdate: (details) {
-        if (_isAnimating) return; // Prevent interaction during animations
-        setState(() {
-          _dragVerticalPosition += details.delta.dy;
-          // Limit the drag distance
-          _dragVerticalPosition = _dragVerticalPosition.clamp(-200.0, 200.0);
-        });
-      },
-      onVerticalDragEnd: (details) {
-        if (_isAnimating) return; // Prevent interaction during animations
         
-        if (_dragVerticalPosition > 100) {
-          // Swiped DOWN for NORMAL
-          _checkAnswer('down');
+        // Added check for cards stuck at border
+        if (dragDistance >= 220) {
+          // Card is at the edge, automatically process as a swipe in 3ms
+          Future.delayed(const Duration(milliseconds: 3), () {
+            if (dragAngle >= -45 && dragAngle < 45) {
+              _checkAnswer('right'); // RIGHT - HIGH
+              return;
+            } else if (dragAngle >= 45 && dragAngle < 135) {
+              _checkAnswer('down');  // DOWN - NORMAL
+              return;
+            } else if ((dragAngle >= 135 && dragAngle <= 180) || 
+                      (dragAngle >= -180 && dragAngle < -135)) {
+              _checkAnswer('left');  // LEFT - LOW
+              return;
+            } else {
+              _snapCardBackToCenter();
+            }
+          });
+          return;
+        }
+        
+        // Check if card was flicked (high velocity)
+        if (flickVelocity > 20) {
+          // Process flick gesture based on velocity angle
+          final double velocityAngle = _getAngleFromOffset(_dragVelocity);
+          
+          if (velocityAngle >= -45 && velocityAngle < 45) {
+            _checkAnswer('right'); // RIGHT - HIGH
+          } else if (velocityAngle >= 45 && velocityAngle < 135) {
+            _checkAnswer('down');  // DOWN - NORMAL
+          } else if ((velocityAngle >= 135 && velocityAngle <= 180) || 
+                    (velocityAngle >= -180 && velocityAngle < -135)) {
+            _checkAnswer('left');  // LEFT - LOW
+          } else {
+            _snapCardBackToCenter(); // Other directions snap back
+          }
+        }
+        // Check based on position if not flicked
+        else if (dragDistance > 100) {
+          // Determine direction based on angle
+          if (dragAngle >= -45 && dragAngle < 45) {
+            _checkAnswer('right'); // RIGHT - HIGH
+          } else if (dragAngle >= 45 && dragAngle < 135) {
+            _checkAnswer('down');  // DOWN - NORMAL
+          } else if ((dragAngle >= 135 && dragAngle <= 180) || 
+                    (dragAngle >= -180 && dragAngle < -135)) {
+            _checkAnswer('left');  // LEFT - LOW
+          } else {
+            _snapCardBackToCenter(); // Other directions snap back
+          }
         } else {
-          // Animate back to center with spring physics
+          // Not dragged far enough, snap back
           _snapCardBackToCenter();
         }
       },
@@ -543,12 +692,16 @@ class _GameScreenState extends ConsumerState<GameScreen>
             );
           }
 
-          // Normal display during standard interaction
+          // Normal display during standard interaction with rotation
           return Transform.translate(
-            offset: Offset(_dragPosition, _dragVerticalPosition),
-            child: Transform.scale(
-              scale: _animation.value,
-              child: Opacity(opacity: _animation.value, child: child),
+            offset: _dragPosition,
+            child: Transform.rotate(
+              // Add slight rotation based on horizontal position for a more natural feel
+              angle: _dragPosition.dx * 0.002, // Convert to radians for subtle rotation
+              child: Transform.scale(
+                scale: _animation.value,
+                child: Opacity(opacity: _animation.value, child: child),
+              ),
             ),
           );
         },
@@ -583,28 +736,30 @@ class _GameScreenState extends ConsumerState<GameScreen>
                         children: [
                           Text(
                             parameter.name,
-                            style: Theme.of(context).textTheme.headlineSmall
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  // Apply slight color gradient to text
-                                  foreground: Paint()
-                                    ..shader =
-                                        LinearGradient(
-                                          colors: [
-                                            Colors.blue.shade700,
-                                            Colors.indigo.shade900,
-                                          ],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        ).createShader(
-                                          const Rect.fromLTWH(0, 0, 200, 70),
-                                        ),
-                                ),
+                            style: TextStyle(
+                              color: textColor,
+                              fontWeight: FontWeight.bold,
+                              // Apply slight color gradient to text
+                              foreground: Paint()
+                                ..shader =
+                                    LinearGradient(
+                                      colors: [
+                                        Colors.blue.shade700,
+                                        Colors.indigo.shade900,
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ).createShader(
+                                      const Rect.fromLTWH(0, 0, 200, 70),
+                                    ),
+                            ),
                           ),
                           Text(
                             parameter.category,
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(color: Colors.grey[600]),
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: 16,
+                            ),
                           ),
                         ],
                       ),
@@ -666,7 +821,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withAlpha(13),
                           blurRadius: 5,
                           spreadRadius: 1,
                         ),
@@ -711,7 +866,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                       borderRadius: BorderRadius.circular(8),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withAlpha(13),
                           blurRadius: 3,
                           offset: const Offset(0, 1),
                         ),
@@ -770,48 +925,54 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
   /// Animates the card back to center position with spring physics for natural feel
   void _snapCardBackToCenter() {
+    if (!mounted) return;
+    
     // Set flag to prevent new drags during animation
     setState(() {
       _isAnimating = true;
     });
     
-    // Create a spring simulation for natural motion
+    // Create a stronger spring simulation for snappier feel
     const springDescription = SpringDescription(
       mass: 1.0,
-      stiffness: 500.0,
-      damping: 20.0,
+      stiffness: 800.0, // Increased stiffness for stronger snap
+      damping: 15.0, // Reduced damping for more bounce
     );
     
     // Use AnimationController for smooth spring animation
     AnimationController springController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 400), // Faster snap
     );
     
     // Track initial positions for smooth animation
-    final startDragX = _dragPosition;
-    final startDragY = _dragVerticalPosition;
+    final Offset startPosition = _dragPosition;
     
-    // Create spring animations for both axes
-    final springAnimationX = springController.drive(
-      Tween<double>(begin: startDragX, end: 0.0)
+    // Create spring animation for both axes
+    final Animation<Offset> springAnimation = springController.drive(
+      Tween<Offset>(
+        begin: startPosition,
+        end: Offset.zero,
+      ),
     );
     
-    final springAnimationY = springController.drive(
-      Tween<double>(begin: startDragY, end: 0.0)
-    );
+    // Play snap sound effect if enabled
+    final soundEnabled = ref.read(soundEnabledProvider);
+    if (soundEnabled) {
+      _soundService.playSnapSound(soundEnabled);
+    }
     
-    // Update card position during animation
     springController.addListener(() {
-      setState(() {
-        _dragPosition = springAnimationX.value;
-        _dragVerticalPosition = springAnimationY.value;
-      });
+      if (mounted) {
+        setState(() {
+          _dragPosition = springAnimation.value;
+        });
+      }
     });
     
     // Reset animating flag when complete
     springController.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
+      if (status == AnimationStatus.completed && mounted) {
         setState(() {
           _isAnimating = false;
         });

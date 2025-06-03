@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 
+import '../services/preferences_service.dart';
 import '../../features/game/presentation/screens/game_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/splash/presentation/screens/splash_screen.dart';
@@ -56,6 +57,10 @@ extension AppRouteExtension on AppRoute {
 final routerProvider = Provider<GoRouter>((ref) {
   // Create Firebase Analytics instance for tracking
   final analytics = FirebaseAnalytics.instance;
+  final preferencesService = PreferencesService();
+  
+  // Initialize preferences service
+  preferencesService.initialize();
   
   return GoRouter(
     initialLocation: AppRoute.splash.path,
@@ -65,8 +70,17 @@ final routerProvider = Provider<GoRouter>((ref) {
     observers: [
       FirebaseAnalyticsObserver(analytics: analytics),
     ],
-    // Add redirect to handle navigation issues
-    redirect: (context, state) {
+    // Add redirect to handle navigation issues and onboarding logic
+    redirect: (context, state) async {
+      // Handle first time onboarding
+      if (state.fullPath == AppRoute.splash.path) {
+        // Check if user has seen onboarding
+        final hasSeenOnboarding = await preferencesService.getHasSeenOnboarding();
+        if (!hasSeenOnboarding) {
+          return AppRoute.onboarding.path;
+        }
+      }
+      
       // Prevent navigation to non-existent routes by redirecting to menu
       if (state.fullPath == null || state.fullPath!.isEmpty) {
         return AppRoute.menu.path;
