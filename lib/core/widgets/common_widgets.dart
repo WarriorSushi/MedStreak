@@ -14,14 +14,14 @@ class AppButton extends StatelessWidget {
   final double width;
 
   const AppButton({
-    Key? key,
+    super.key,
     required this.text,
     required this.onPressed,
     this.isPrimary = true,
     this.isLoading = false,
     this.icon,
     this.width = double.infinity,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -72,12 +72,12 @@ class AppOutlinedButton extends StatelessWidget {
   final double width;
 
   const AppOutlinedButton({
-    Key? key,
+    super.key,
     required this.text,
     required this.onPressed,
     this.icon,
     this.width = double.infinity,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -120,18 +120,20 @@ class InfoCard extends StatelessWidget {
   final Color? iconColor;
 
   const InfoCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.value,
     required this.icon,
     this.backgroundColor,
     this.iconColor,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bgColor = backgroundColor ?? theme.colorScheme.surfaceVariant.withOpacity(0.7);
+    final bgColor =
+        backgroundColor ??
+        theme.colorScheme.surfaceContainerHighest.withOpacity(0.7);
     final textColor = theme.colorScheme.onSurface;
     final iconCol = iconColor ?? theme.colorScheme.primary;
 
@@ -181,7 +183,7 @@ class InfoCard extends StatelessWidget {
 class LoadingIndicator extends StatelessWidget {
   final String? message;
 
-  const LoadingIndicator({Key? key, this.message}) : super(key: key);
+  const LoadingIndicator({super.key, this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -190,12 +192,9 @@ class LoadingIndicator extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const CircularProgressIndicator(),
-          if (message != null) ...[  
+          if (message != null) ...[
             const SizedBox(height: 16),
-            Text(
-              message!,
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
+            Text(message!, style: const TextStyle(fontWeight: FontWeight.w500)),
           ],
         ],
       ),
@@ -208,11 +207,7 @@ class ErrorDisplay extends StatelessWidget {
   final String message;
   final VoidCallback? onRetry;
 
-  const ErrorDisplay({
-    Key? key, 
-    required this.message,
-    this.onRetry,
-  }) : super(key: key);
+  const ErrorDisplay({super.key, required this.message, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -222,21 +217,14 @@ class ErrorDisplay extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.error_outline,
-              color: AppColors.error,
-              size: 48,
-            ),
+            const Icon(Icons.error_outline, color: AppColors.error, size: 48),
             const SizedBox(height: 16),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
-            if (onRetry != null) ...[  
+            if (onRetry != null) ...[
               const SizedBox(height: 24),
               AppButton(
                 text: 'Try Again',
@@ -257,18 +245,14 @@ class StreakCounter extends StatelessWidget {
   final int streak;
   final bool animate;
 
-  const StreakCounter({
-    Key? key,
-    required this.streak,
-    this.animate = true,
-  }) : super(key: key);
+  const StreakCounter({super.key, required this.streak, this.animate = true});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (streak > 0) ...[  
+        if (streak > 0) ...[
           SizedBox(
             height: 32,
             width: 32,
@@ -299,11 +283,11 @@ class SectionHeader extends StatelessWidget {
   final VoidCallback? onSeeAllPressed;
 
   const SectionHeader({
-    Key? key, 
+    super.key,
     required this.title,
     this.subtitle,
     this.onSeeAllPressed,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -334,7 +318,9 @@ class SectionHeader extends StatelessWidget {
               subtitle!,
               style: TextStyle(
                 fontSize: 14,
-                color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                color: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.color?.withOpacity(0.7),
               ),
             ),
         ],

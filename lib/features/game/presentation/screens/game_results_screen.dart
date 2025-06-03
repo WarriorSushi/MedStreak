@@ -16,23 +16,25 @@ class GameResultsScreen extends ConsumerWidget {
   final List<bool> results;
 
   const GameResultsScreen({
-    Key? key,
+    super.key,
     required this.gameMode,
     required this.score,
     required this.bestStreak,
     required this.results,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final correctAnswers = results.where((result) => result).length;
     final totalAnswers = results.length;
-    final accuracy = totalAnswers > 0 ? (correctAnswers / totalAnswers) * 100 : 0.0;
-    
+    final accuracy = totalAnswers > 0
+        ? (correctAnswers / totalAnswers) * 100
+        : 0.0;
+
     // Determine performance rating
     final String rating = _getRating(accuracy.toDouble());
     final bool isHighScore = _isHighScore(score);
-    
+
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -50,7 +52,7 @@ class GameResultsScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            
+
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -58,19 +60,18 @@ class GameResultsScreen extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SizedBox(height: 16),
-                    
+
                     // Game completion header
                     Text(
-                      gameMode == GameMode.normal 
-                          ? 'Game Completed!' 
+                      gameMode == GameMode.normal
+                          ? 'Game Completed!'
                           : 'Practice Session Completed!',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
-                    
+
                     // Score animation
                     if (isHighScore)
                       SizedBox(
@@ -80,10 +81,13 @@ class GameResultsScreen extends ConsumerWidget {
                           repeat: true,
                         ),
                       ),
-                    
+
                     // Performance rating
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         color: _getRatingColor(rating),
                         borderRadius: BorderRadius.circular(30),
@@ -98,7 +102,7 @@ class GameResultsScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 32),
-                    
+
                     // Results grid
                     Container(
                       padding: const EdgeInsets.all(24),
@@ -124,7 +128,7 @@ class GameResultsScreen extends ConsumerWidget {
                             isHighlight: true,
                           ),
                           const Divider(height: 32),
-                          
+
                           // Accuracy row
                           _buildResultRow(
                             context: context,
@@ -133,7 +137,7 @@ class GameResultsScreen extends ConsumerWidget {
                             icon: Icons.check_circle_outline,
                           ),
                           const SizedBox(height: 16),
-                          
+
                           // Best streak row
                           _buildResultRow(
                             context: context,
@@ -143,7 +147,7 @@ class GameResultsScreen extends ConsumerWidget {
                             valueColor: Colors.orange,
                           ),
                           const SizedBox(height: 16),
-                          
+
                           // Correct answers row
                           _buildResultRow(
                             context: context,
@@ -155,24 +159,28 @@ class GameResultsScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 32),
-                    
+
                     // Action buttons
                     AppButton(
                       text: 'Play Again',
                       icon: Icons.replay,
                       onPressed: () {
                         // Reset game and navigate back to game screen
-                        final gameNotifier = ref.read(gameProvider(gameMode).notifier);
+                        final gameNotifier = ref.read(
+                          gameProvider(gameMode).notifier,
+                        );
                         gameNotifier.restartGame();
                         context.goNamed(
-                          gameMode == GameMode.normal 
-                              ? AppRoute.game.name 
-                              : AppRoute.game.name // Use game route for both modes for now
+                          gameMode == GameMode.normal
+                              ? AppRoute.game.name
+                              : AppRoute
+                                    .game
+                                    .name, // Use game route for both modes for now
                         );
                       },
                     ),
                     const SizedBox(height: 16),
-                    
+
                     AppOutlinedButton(
                       text: 'Back to Menu',
                       icon: Icons.home,
@@ -203,14 +211,14 @@ class GameResultsScreen extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: isHighlight 
+            color: isHighlight
                 ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
                 : Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
             icon,
-            color: isHighlight 
+            color: isHighlight
                 ? Theme.of(context).colorScheme.primary
                 : Theme.of(context).colorScheme.onSurface,
             size: 24,
@@ -231,9 +239,11 @@ class GameResultsScreen extends ConsumerWidget {
           style: TextStyle(
             fontSize: isHighlight ? 24 : 18,
             fontWeight: FontWeight.bold,
-            color: valueColor ?? (isHighlight 
-                ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).colorScheme.onSurface),
+            color:
+                valueColor ??
+                (isHighlight
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurface),
           ),
         ),
       ],
@@ -268,6 +278,6 @@ class GameResultsScreen extends ConsumerWidget {
   /// Check if score is a high score (would need to be connected to a database)
   bool _isHighScore(int score) {
     // Placeholder logic - in a real app, would compare to stored high scores
-    return score > 500; 
+    return score > 500;
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 import '../../features/game/presentation/screens/game_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
@@ -53,9 +54,25 @@ extension AppRouteExtension on AppRoute {
 
 /// Provider for the app router
 final routerProvider = Provider<GoRouter>((ref) {
+  // Create Firebase Analytics instance for tracking
+  final analytics = FirebaseAnalytics.instance;
+  
   return GoRouter(
     initialLocation: AppRoute.splash.path,
     debugLogDiagnostics: true,
+    
+    // Add observers for Firebase Analytics tracking
+    observers: [
+      FirebaseAnalyticsObserver(analytics: analytics),
+    ],
+    // Add redirect to handle navigation issues
+    redirect: (context, state) {
+      // Prevent navigation to non-existent routes by redirecting to menu
+      if (state.fullPath == null || state.fullPath!.isEmpty) {
+        return AppRoute.menu.path;
+      }
+      return null;
+    },
     routes: [
       // Splash screen (initial route)
       GoRoute(

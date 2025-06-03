@@ -7,17 +7,14 @@ import '../../../../features/settings/application/providers/settings_provider.da
 /// Settings screen that allows the user to customize their experience
 /// Includes toggles for unit system (SI vs Conventional) and sex context (Male vs Female)
 class SettingsScreen extends ConsumerWidget {
-  const SettingsScreen({Key? key}) : super(key: key);
+  const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
-    
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Settings'), centerTitle: true),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -26,48 +23,52 @@ class SettingsScreen extends ConsumerWidget {
             children: [
               _buildSectionHeader(context, 'Game Preferences'),
               const SizedBox(height: 16),
-              
+
               // Unit System Preference
               _buildUnitSystemSelector(context, settings, ref),
               const SizedBox(height: 24),
-              
+
               // Sex Context Preference
               _buildSexContextSelector(context, settings, ref),
               const SizedBox(height: 24),
-              
+
               _buildSectionHeader(context, 'App Settings'),
               const SizedBox(height: 16),
-              
+
               // Dark Mode Toggle
               _buildSettingToggle(
                 context: context,
                 title: 'Dark Mode',
                 subtitle: 'Use dark theme for the app',
                 value: settings.darkMode,
-                onChanged: (value) => ref.read(settingsProvider.notifier).toggleDarkMode(),
+                onChanged: (value) =>
+                    ref.read(settingsProvider.notifier).toggleDarkMode(),
                 icon: Icons.dark_mode,
               ),
               const SizedBox(height: 16),
-              
+
               // Notifications Toggle
               _buildSettingToggle(
                 context: context,
                 title: 'Notifications',
                 subtitle: 'Enable push notifications',
                 value: settings.notificationsEnabled,
-                onChanged: (value) => ref.read(settingsProvider.notifier).toggleNotifications(),
+                onChanged: (value) =>
+                    ref.read(settingsProvider.notifier).toggleNotifications(),
                 icon: Icons.notifications,
               ),
               const SizedBox(height: 24),
-              
+
               _buildSectionHeader(context, 'About'),
               const SizedBox(height: 16),
-              
+
               ListTile(
                 leading: const Icon(Icons.info),
                 title: const Text('App Version'),
                 subtitle: const Text('1.0.0'),
-                onTap: () {/* Show app info */},
+                onTap: () {
+                  /* Show app info */
+                },
               ),
             ],
           ),
@@ -83,9 +84,9 @@ class SettingsScreen extends ConsumerWidget {
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const Divider(),
       ],
@@ -93,7 +94,11 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   /// Builds the unit system selector (SI vs Conventional)
-  Widget _buildUnitSystemSelector(BuildContext context, SettingsState settings, WidgetRef ref) {
+  Widget _buildUnitSystemSelector(
+    BuildContext context,
+    SettingsState settings,
+    WidgetRef ref,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -111,9 +116,9 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   Text(
                     'Choose between SI and Conventional units',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[600],
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -129,7 +134,9 @@ class SettingsScreen extends ConsumerWidget {
                 title: 'SI Units',
                 subtitle: 'mmol/L, µmol/L',
                 isSelected: settings.unitSystem == UnitSystem.si,
-                onTap: () => ref.read(settingsProvider.notifier).setUnitSystem(UnitSystem.si),
+                onTap: () => ref
+                    .read(settingsProvider.notifier)
+                    .setUnitSystem(UnitSystem.si),
               ),
             ),
             const SizedBox(width: 16),
@@ -139,7 +146,9 @@ class SettingsScreen extends ConsumerWidget {
                 title: 'Conventional',
                 subtitle: 'mg/dL, ng/mL',
                 isSelected: settings.unitSystem == UnitSystem.conventional,
-                onTap: () => ref.read(settingsProvider.notifier).setUnitSystem(UnitSystem.conventional),
+                onTap: () => ref
+                    .read(settingsProvider.notifier)
+                    .setUnitSystem(UnitSystem.conventional),
               ),
             ),
           ],
@@ -149,7 +158,11 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   /// Builds the sex context selector (Male vs Female vs Neutral)
-  Widget _buildSexContextSelector(BuildContext context, SettingsState settings, WidgetRef ref) {
+  Widget _buildSexContextSelector(
+    BuildContext context,
+    SettingsState settings,
+    WidgetRef ref,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -167,9 +180,9 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   Text(
                     'Select which reference ranges to use',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[600],
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -185,7 +198,9 @@ class SettingsScreen extends ConsumerWidget {
                 title: 'Male',
                 subtitle: 'Male reference ranges',
                 isSelected: settings.sexContext == SexContext.male,
-                onTap: () => ref.read(settingsProvider.notifier).setSexContext(SexContext.male),
+                onTap: () => ref
+                    .read(settingsProvider.notifier)
+                    .setSexContext(SexContext.male),
                 icon: Icons.male,
               ),
             ),
@@ -196,7 +211,9 @@ class SettingsScreen extends ConsumerWidget {
                 title: 'Female',
                 subtitle: 'Female reference ranges',
                 isSelected: settings.sexContext == SexContext.female,
-                onTap: () => ref.read(settingsProvider.notifier).setSexContext(SexContext.female),
+                onTap: () => ref
+                    .read(settingsProvider.notifier)
+                    .setSexContext(SexContext.female),
                 icon: Icons.female,
               ),
             ),
@@ -207,7 +224,9 @@ class SettingsScreen extends ConsumerWidget {
                 title: 'Neutral',
                 subtitle: 'Average ranges',
                 isSelected: settings.sexContext == SexContext.neutral,
-                onTap: () => ref.read(settingsProvider.notifier).setSexContext(SexContext.neutral),
+                onTap: () => ref
+                    .read(settingsProvider.notifier)
+                    .setSexContext(SexContext.neutral),
                 icon: Icons.people,
               ),
             ),
@@ -229,8 +248,8 @@ class SettingsScreen extends ConsumerWidget {
     return GestureDetector(
       onTap: onTap,
       child: Card(
-        color: isSelected 
-            ? Theme.of(context).colorScheme.primaryContainer 
+        color: isSelected
+            ? Theme.of(context).colorScheme.primaryContainer
             : Theme.of(context).cardTheme.color,
         elevation: isSelected ? 4 : 1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -239,11 +258,11 @@ class SettingsScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (icon != null) ...[  
+              if (icon != null) ...[
                 Icon(
                   icon,
-                  color: isSelected 
-                      ? Theme.of(context).colorScheme.onPrimaryContainer 
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.onPrimaryContainer
                       : Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(height: 8),
@@ -251,20 +270,22 @@ class SettingsScreen extends ConsumerWidget {
               Text(
                 title,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: isSelected 
-                          ? Theme.of(context).colorScheme.onPrimaryContainer 
-                          : null,
-                    ),
+                  fontWeight: FontWeight.bold,
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.onPrimaryContainer
+                      : null,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
                 subtitle,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: isSelected 
-                          ? Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.8) 
-                          : Colors.grey[600],
-                    ),
+                  color: isSelected
+                      ? Theme.of(
+                          context,
+                        ).colorScheme.onPrimaryContainer.withOpacity(0.8)
+                      : Colors.grey[600],
+                ),
               ),
             ],
           ),

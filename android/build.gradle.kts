@@ -41,7 +41,28 @@ subprojects {
     }
 }
 
+// Configure all Android projects properly - using Kotlin DSL syntax
 subprojects {
+    // Set Java 11 compatibility for Android projects
+    plugins.withId("com.android.application") {
+        extensions.configure<com.android.build.gradle.BaseExtension> {
+            compileOptions {
+                sourceCompatibility = JavaVersion.VERSION_11
+                targetCompatibility = JavaVersion.VERSION_11
+            }
+        }
+    }
+    
+    plugins.withId("com.android.library") {
+        extensions.configure<com.android.build.gradle.BaseExtension> {
+            compileOptions {
+                sourceCompatibility = JavaVersion.VERSION_11
+                targetCompatibility = JavaVersion.VERSION_11
+            }
+        }
+    }
+    
+    // Ensure app module is evaluated when needed
     project.evaluationDependsOn(":app")
 }
 

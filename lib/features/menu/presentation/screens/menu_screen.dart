@@ -24,7 +24,7 @@ class MenuItem {
 
 /// Main menu screen that serves as the central hub of the app
 class MenuScreen extends ConsumerWidget {
-  const MenuScreen({Key? key}) : super(key: key);
+  const MenuScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -104,28 +104,23 @@ class MenuScreen extends ConsumerWidget {
               ),
             ],
           ),
-          
+
           // Current streak info
-          SliverToBoxAdapter(
-            child: _buildCurrentStreak(context),
-          ),
-          
+          SliverToBoxAdapter(child: _buildCurrentStreak(context)),
+
           // Menu items
           SliverPadding(
             padding: const EdgeInsets.all(16.0),
             sliver: SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                childAspectRatio: 1.1,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
+                childAspectRatio: 1.3, // Increased to make cards less tall
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
               ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  return _buildMenuItem(context, menuItems[index]);
-                },
-                childCount: menuItems.length,
-              ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                return _buildMenuItem(context, menuItems[index]);
+              }, childCount: menuItems.length),
             ),
           ),
         ],
@@ -133,20 +128,18 @@ class MenuScreen extends ConsumerWidget {
     );
   }
 
-  /// Build the current streak display
+  /// Build the highest streak display
   Widget _buildCurrentStreak(BuildContext context) {
     // TODO: Get actual streak data from provider
-    const int streak = 5;
-    
+    const int highestStreak = 0; // For testing, set to 0 to show 'yet to be made'
+
     return Container(
       margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      height: 100, // Reduced height
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            Colors.orange.shade300,
-            Colors.deepOrange.shade500,
-          ],
+          colors: [Colors.orange.shade300, Colors.deepOrange.shade500],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -161,38 +154,43 @@ class MenuScreen extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          // Streak animation
+          // Streak animation - smaller size
           Lottie.asset(
             'assets/lottie/streak_flame_level_1.json',
-            height: 80,
-            width: 80,
+            height: 60,
+            width: 60,
             repeat: true,
           ),
-          const SizedBox(width: 16),
-          
+          const SizedBox(width: 12),
+
           // Streak info
           Expanded(
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Current Streak',
+                  'Highest Streak',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
-                      ),
+                    color: Colors.white,
+                    fontSize: 14,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '$streak days',
+                  highestStreak > 0 
+                    ? '$highestStreak' 
+                    : 'Yet to be made',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    fontSize: 22,
+                  ),
                 ),
               ],
             ),
           ),
-          
+
           // Play button
           ElevatedButton(
             onPressed: () {
@@ -201,6 +199,7 @@ class MenuScreen extends ConsumerWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: Colors.deepOrange,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
             child: const Text('Play Now'),
           ),
@@ -212,42 +211,41 @@ class MenuScreen extends ConsumerWidget {
   /// Build a menu item card
   Widget _buildMenuItem(BuildContext context, MenuItem item) {
     return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 3, // Reduced elevation
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), // Smaller border radius
       child: InkWell(
         onTap: () {
           context.goNamed(item.route.name);
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 12.0), // Reduced padding
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min, // Minimizes the vertical space
             children: [
-              // Icon
-              Icon(
-                item.icon,
-                size: 48,
-                color: item.color,
-              ),
-              const SizedBox(height: 12),
-              
-              // Title
+              // Icon - smaller size
+              Icon(item.icon, size: 36, color: item.color),
+              const SizedBox(height: 8), // Reduced spacing
+
+              // Title - more compact font
               Text(
                 item.title,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14, // Smaller font size
+                ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 4),
-              
-              // Subtitle
+              const SizedBox(height: 2), // Minimal spacing
+
+              // Subtitle - more compact
               Text(
                 item.subtitle,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                  color: Colors.grey[600],
+                  fontSize: 11, // Smaller font size
+                ),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,

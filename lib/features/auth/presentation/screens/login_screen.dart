@@ -9,7 +9,7 @@ import '../../../../core/router/app_router.dart';
 /// For the initial implementation, this will provide a simple login
 /// and option to proceed to the app without authentication
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -41,25 +41,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Logo animation
+                  // Logo animation using improved animation file
                   Lottie.asset(
-                    'assets/lottie/logo animation.json',
-                    height: 150,
-                    width: 150,
+                    'assets/lottie/logoanimation.json', // Using the cleaner logo animation
+                    height: 180, // Slightly larger for better visibility
+                    width: 180,
+                    fit: BoxFit.contain, // Ensure animation fits properly
+                    repeat: true, // Repeat animation on login screen
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // App name
                   Text(
                     'MedStreak',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
-                  
+
                   // Tagline
                   Text(
                     'Log in to track your progress and compete with others',
@@ -67,7 +69,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
-                  
+
                   // Email field
                   TextFormField(
                     controller: _emailController,
@@ -88,7 +90,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Password field
                   TextFormField(
                     controller: _passwordController,
@@ -109,7 +111,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     },
                   ),
                   const SizedBox(height: 8),
-                  
+
                   // Forgot password link
                   Align(
                     alignment: Alignment.centerRight,
@@ -121,7 +123,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // Login button
                   ElevatedButton(
                     onPressed: _isLoading ? null : _handleLogin,
@@ -133,7 +135,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         : const Text('Login'),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Register link
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -148,7 +150,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ],
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // Continue without login option
                   OutlinedButton(
                     onPressed: _isLoading ? null : _handleGuestLogin,
@@ -173,7 +175,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       try {
         // TODO: Implement actual authentication
         await Future.delayed(const Duration(seconds: 2)); // Simulate API call
-        
+
         if (mounted) {
           // Navigate to main menu
           context.goNamed(AppRoute.menu.name);
@@ -181,9 +183,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       } catch (e) {
         // Show error snackbar
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Login error: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Login error: $e')));
         }
       } finally {
         if (mounted) {

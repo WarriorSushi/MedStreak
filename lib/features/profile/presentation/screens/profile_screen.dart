@@ -5,27 +5,24 @@ import '../../../../core/theme/app_colors.dart';
 
 /// Profile screen that displays user information, stats and achievements
 class ProfileScreen extends ConsumerWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Profile'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('My Profile'), centerTitle: true),
       body: SingleChildScrollView(
         child: Column(
           children: [
             // Profile header with avatar and name
             _buildProfileHeader(context),
-            
+
             // Stats section
             _buildStatsSection(context),
-            
+
             // Achievement section
             _buildAchievementsSection(context),
-            
+
             // History section
             _buildHistorySection(context),
           ],
@@ -54,13 +51,9 @@ class ProfileScreen extends ConsumerWidget {
               CircleAvatar(
                 radius: 60,
                 backgroundColor: Colors.white,
-                child: Icon(
-                  Icons.person,
-                  size: 80,
-                  color: AppColors.primary,
-                ),
+                child: Icon(Icons.person, size: 80, color: AppColors.primary),
               ),
-              
+
               // Edit button
               Positioned(
                 bottom: 0,
@@ -71,20 +64,16 @@ class ProfileScreen extends ConsumerWidget {
                     shape: BoxShape.circle,
                   ),
                   padding: const EdgeInsets.all(8),
-                  child: const Icon(
-                    Icons.edit,
-                    color: Colors.white,
-                    size: 20,
-                  ),
+                  child: const Icon(Icons.edit, color: Colors.white, size: 20),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // User name
           const Text(
-            'Dr. Smith',  // TODO: Replace with actual user data
+            'Dr. Smith', // TODO: Replace with actual user data
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -92,7 +81,7 @@ class ProfileScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          
+
           // User level
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -105,10 +94,7 @@ class ProfileScreen extends ConsumerWidget {
               children: [
                 Icon(Icons.star, color: AppColors.gold, size: 18),
                 SizedBox(width: 4),
-                Text(
-                  'Level 5 - Intern',
-                  style: TextStyle(color: Colors.white),
-                ),
+                Text('Level 5 - Intern', style: TextStyle(color: Colors.white)),
               ],
             ),
           ),
@@ -126,12 +112,12 @@ class ProfileScreen extends ConsumerWidget {
         children: [
           Text(
             'Stats',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          
+
           // Stats cards in a grid
           GridView.count(
             crossAxisCount: 2,
@@ -202,9 +188,9 @@ class ProfileScreen extends ConsumerWidget {
             Text(
               value,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -222,12 +208,12 @@ class ProfileScreen extends ConsumerWidget {
         children: [
           Text(
             'Achievements',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          
+
           // Achievement list
           _buildAchievementItem(
             context,
@@ -286,9 +272,7 @@ class ProfileScreen extends ConsumerWidget {
       ),
       subtitle: Text(
         description,
-        style: TextStyle(
-          color: isUnlocked ? Colors.grey[600] : Colors.grey,
-        ),
+        style: TextStyle(color: isUnlocked ? Colors.grey[600] : Colors.grey),
       ),
       trailing: isUnlocked
           ? const Icon(Icons.check_circle, color: Colors.green)
@@ -305,19 +289,14 @@ class ProfileScreen extends ConsumerWidget {
         children: [
           Text(
             'Recent Games',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          
+
           // Game history list
-          _buildGameHistoryItem(
-            context,
-            'Today',
-            'Score: 85',
-            'Accuracy: 80%',
-          ),
+          _buildGameHistoryItem(context, 'Today', 'Score: 85', 'Accuracy: 80%'),
           _buildGameHistoryItem(
             context,
             'Yesterday',
@@ -358,14 +337,11 @@ class ProfileScreen extends ConsumerWidget {
                 color: AppColors.primary.withOpacity(0.2),
               ),
               child: Center(
-                child: Icon(
-                  Icons.calendar_today,
-                  color: AppColors.primary,
-                ),
+                child: Icon(Icons.calendar_today, color: AppColors.primary),
               ),
             ),
             const SizedBox(width: 16),
-            
+
             // Game details
             Expanded(
               child: Column(
@@ -374,8 +350,8 @@ class ProfileScreen extends ConsumerWidget {
                   Text(
                     date,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(score),
@@ -383,7 +359,7 @@ class ProfileScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            
+
             // Details button
             IconButton(
               icon: const Icon(Icons.chevron_right),

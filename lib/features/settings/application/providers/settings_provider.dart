@@ -31,7 +31,7 @@ class SettingsState {
   /// Default settings
   factory SettingsState.defaults() {
     return const SettingsState(
-      unitSystem: UnitSystem.si,  // Default to SI units
+      unitSystem: UnitSystem.si, // Default to SI units
       sexContext: SexContext.neutral, // Default to neutral sex context
       darkMode: false,
       notificationsEnabled: true,
@@ -58,32 +58,46 @@ class SettingsState {
 }
 
 /// Provider to access the shared preferences instance
-final sharedPreferencesProvider = FutureProvider<SharedPreferences>((ref) async {
+final sharedPreferencesProvider = FutureProvider<SharedPreferences>((
+  ref,
+) async {
   return await SharedPreferences.getInstance();
 });
 
 /// Provider to manage user settings
 class SettingsNotifier extends StateNotifier<SettingsState> {
-  final SharedPreferences _prefs;
+  final SharedPreferences? _prefs;
 
   SettingsNotifier(this._prefs) : super(SettingsState.defaults()) {
-    _loadSettings();
+    if (_prefs != null) {
+      _loadSettings();
+    }
+  }
+
+  /// Constructor that creates a notifier with default settings and no persistence
+  /// Used as a fallback when SharedPreferences is not yet initialized
+  factory SettingsNotifier.withDefaults() {
+    return SettingsNotifier(null);
   }
 
   /// Load settings from SharedPreferences
   void _loadSettings() {
+    if (_prefs == null) return;
+
     final unitSystemIndex = _prefs.getInt(SettingsKeys.unitSystem);
     final sexContextIndex = _prefs.getInt(SettingsKeys.sexContext);
     final darkMode = _prefs.getBool(SettingsKeys.darkMode);
-    final notificationsEnabled = _prefs.getBool(SettingsKeys.notificationsEnabled);
+    final notificationsEnabled = _prefs.getBool(
+      SettingsKeys.notificationsEnabled,
+    );
     final language = _prefs.getString(SettingsKeys.language);
 
     state = state.copyWith(
-      unitSystem: unitSystemIndex != null 
-          ? UnitSystem.values[unitSystemIndex] 
+      unitSystem: unitSystemIndex != null
+          ? UnitSystem.values[unitSystemIndex]
           : UnitSystem.si,
-      sexContext: sexContextIndex != null 
-          ? SexContext.values[sexContextIndex] 
+      sexContext: sexContextIndex != null
+          ? SexContext.values[sexContextIndex]
           : SexContext.neutral,
       darkMode: darkMode ?? false,
       notificationsEnabled: notificationsEnabled ?? true,
@@ -93,53 +107,82 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
 
   /// Update the unit system preference (SI or Conventional)
   Future<void> setUnitSystem(UnitSystem unitSystem) async {
-    await _prefs.setInt(SettingsKeys.unitSystem, unitSystem.index);
+    // Update state immediately regardless of persistence
     state = state.copyWith(unitSystem: unitSystem);
+
+    // Persist if possible
+    if (_prefs != null) {
+      await _prefs.setInt(SettingsKeys.unitSystem, unitSystem.index);
+    }
   }
 
   /// Toggle between SI and Conventional units
   Future<void> toggleUnitSystem() async {
-    final newUnitSystem = state.unitSystem == UnitSystem.si 
-        ? UnitSystem.conventional 
+    final newUnitSystem = state.unitSystem == UnitSystem.si
+        ? UnitSystem.conventional
         : UnitSystem.si;
     await setUnitSystem(newUnitSystem);
   }
 
   /// Update the sex context preference (Male, Female, or Neutral)
   Future<void> setSexContext(SexContext sexContext) async {
-    await _prefs.setInt(SettingsKeys.sexContext, sexContext.index);
+    // Update state immediately regardless of persistence
     state = state.copyWith(sexContext: sexContext);
+
+    // Persist if possible
+    if (_prefs != null) {
+      await _prefs.setInt(SettingsKeys.sexContext, sexContext.index);
+    }
   }
 
   /// Toggle dark mode
   Future<void> toggleDarkMode() async {
     final newValue = !state.darkMode;
-    await _prefs.setBool(SettingsKeys.darkMode, newValue);
     state = state.copyWith(darkMode: newValue);
+
+    // Persist if possible
+    if (_prefs != null) {
+      await _prefs.setBool(SettingsKeys.darkMode, newValue);
+    }
   }
 
   /// Toggle notifications
   Future<void> toggleNotifications() async {
     final newValue = !state.notificationsEnabled;
-    await _prefs.setBool(SettingsKeys.notificationsEnabled, newValue);
     state = state.copyWith(notificationsEnabled: newValue);
+
+    // Persist if possible
+    if (_prefs != null) {
+      await _prefs.setBool(SettingsKeys.notificationsEnabled, newValue);
+    }
   }
 
   /// Set language
   Future<void> setLanguage(String languageCode) async {
-    await _prefs.setString(SettingsKeys.language, languageCode);
     state = state.copyWith(language: languageCode);
+
+    // Persist if possible
+    if (_prefs != null) {
+      await _prefs.setString(SettingsKeys.language, languageCode);
+    }
   }
 }
 
-/// Provider to access settings state
-final settingsProvider = StateNotifierProvider<SettingsNotifier, SettingsState>((ref) {
-  final prefs = ref.watch(sharedPreferencesProvider).value;
-  if (prefs == null) {
-    throw Exception('SharedPreferences not initialized');
-  }
-  return SettingsNotifier(prefs);
-});
+/// Provider to access settings state with fallback to defaults if SharedPreferences is not ready
+final settingsProvider = StateNotifierProvider<SettingsNotifier, SettingsState>(
+  (ref) {
+    // Create a placeholder notifier with default settings
+    final asyncPrefs = ref.watch(sharedPreferencesProvider);
+
+    if (asyncPrefs.hasValue) {
+      return SettingsNotifier(asyncPrefs.value!);
+    } else {
+      // Return a notifier with default settings that doesn't persist changes
+      // This is temporary until SharedPreferences is initialized
+      return SettingsNotifier.withDefaults();
+    }
+  },
+);
 
 /// Helper providers for individual settings
 final unitSystemProvider = Provider<UnitSystem>((ref) {

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1045626165931",
+    "project_id": "medstreak-85f2b",
+    "storage_bucket": "medstreak-85f2b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1045626165931:android:e2bd99a4e500e74a3eb5ee",
+        "android_client_info": {
+          "package_name": "com.medstreak.medstreak"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDUJrKsmp8_M1X60gZ-c9pYAojFd1KPge0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

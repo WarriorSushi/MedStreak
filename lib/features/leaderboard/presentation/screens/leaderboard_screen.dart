@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 
-
-
 /// Model for leaderboard user data
 class LeaderboardUser {
   final String id;
@@ -25,7 +23,7 @@ class LeaderboardUser {
 
 /// Leaderboard screen that displays top users ranked by score
 class LeaderboardScreen extends ConsumerStatefulWidget {
-  const LeaderboardScreen({Key? key}) : super(key: key);
+  const LeaderboardScreen({super.key});
 
   @override
   ConsumerState<LeaderboardScreen> createState() => _LeaderboardScreenState();
@@ -127,7 +125,7 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    
+
     // Simulate loading data
     _loadLeaderboardData();
   }
@@ -142,13 +140,13 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen>
   Future<void> _loadLeaderboardData() async {
     // Simulate API call delay
     await Future.delayed(const Duration(seconds: 1));
-    
+
     if (mounted) {
       setState(() {
         // Copy the daily leaderboard data with modified scores for other tabs
         _weeklyLeaderboard.clear();
         _allTimeLeaderboard.clear();
-        
+
         for (final user in _dailyLeaderboard) {
           _weeklyLeaderboard.add(
             LeaderboardUser(
@@ -160,7 +158,7 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen>
               streak: user.streak + 2,
             ),
           );
-          
+
           _allTimeLeaderboard.add(
             LeaderboardUser(
               id: user.id,
@@ -172,11 +170,11 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen>
             ),
           );
         }
-        
+
         // Sort by score
         _weeklyLeaderboard.sort((a, b) => b.score.compareTo(a.score));
         _allTimeLeaderboard.sort((a, b) => b.score.compareTo(a.score));
-        
+
         _isLoading = false;
       });
     }
@@ -213,13 +211,15 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen>
   /// Build a leaderboard tab with the given user list
   Widget _buildLeaderboardTab(List<LeaderboardUser> users) {
     // Find the index of the current user (Guest User)
-    final currentUserIndex = users.indexWhere((user) => user.name == 'Guest User');
-    
+    final currentUserIndex = users.indexWhere(
+      (user) => user.name == 'Guest User',
+    );
+
     return Column(
       children: [
         // Top 3 users podium
         if (users.length >= 3) _buildTopThreePodium(users.sublist(0, 3)),
-        
+
         // List of other users
         Expanded(
           child: ListView.builder(
@@ -228,10 +228,10 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen>
             itemBuilder: (context, index) {
               // Skip the top 3 users as they're shown in the podium
               if (index < 3) return const SizedBox.shrink();
-              
+
               final user = users[index];
               final isCurrentUser = user.name == 'Guest User';
-              
+
               return _buildLeaderboardItem(
                 rank: index + 1,
                 user: user,
@@ -240,10 +240,13 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen>
             },
           ),
         ),
-        
+
         // Current user position (if not in top 10)
         if (currentUserIndex > 10)
-          _buildCurrentUserPosition(currentUserIndex + 1, users[currentUserIndex]),
+          _buildCurrentUserPosition(
+            currentUserIndex + 1,
+            users[currentUserIndex],
+          ),
       ],
     );
   }
@@ -275,7 +278,7 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen>
               trophy: Icons.looks_two,
               color: Colors.grey[300]!,
             ),
-          
+
           // 1st Place
           _buildPodiumUser(
             user: topThree[0],
@@ -285,7 +288,7 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen>
             color: Colors.amber,
             showCrown: true,
           ),
-          
+
           // 3rd Place
           if (topThree.length > 2)
             _buildPodiumUser(
@@ -319,7 +322,7 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen>
             height: 40,
             width: 40,
           ),
-        
+
         // User avatar
         Stack(
           alignment: Alignment.center,
@@ -340,7 +343,7 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen>
                 ),
               ),
             ),
-            
+
             // Trophy icon
             Positioned(
               bottom: 0,
@@ -352,37 +355,32 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen>
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 2),
                 ),
-                child: Icon(
-                  trophy,
-                  color: Colors.white,
-                  size: 14,
-                ),
+                child: Icon(trophy, color: Colors.white, size: 14),
               ),
             ),
           ],
         ),
         const SizedBox(height: 8),
-        
+
         // User name (truncated if too long)
         Text(
-          user.name.length > 10 ? '${user.name.substring(0, 10)}...' : user.name,
+          user.name.length > 10
+              ? '${user.name.substring(0, 10)}...'
+              : user.name,
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 4),
-        
+
         // User score
         Text(
           '${user.score} pts',
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 12,
-          ),
+          style: const TextStyle(color: Colors.white70, fontSize: 12),
         ),
         const SizedBox(height: 8),
-        
+
         // Podium platform
         Container(
           width: 80,
@@ -408,21 +406,21 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen>
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: isCurrentUser 
-            ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3) 
+        color: isCurrentUser
+            ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
             : null,
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: isCurrentUser 
-              ? Theme.of(context).colorScheme.primary.withOpacity(0.2) 
+          backgroundColor: isCurrentUser
+              ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
               : Colors.grey[200],
           child: Text(
             '$rank',
             style: TextStyle(
-              color: isCurrentUser 
-                  ? Theme.of(context).colorScheme.primary 
+              color: isCurrentUser
+                  ? Theme.of(context).colorScheme.primary
                   : Colors.grey[700],
               fontWeight: FontWeight.bold,
             ),

@@ -1,0 +1,73 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is accessing their own data
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Helper function to check if document exists
+    function exists(path) {
+      return exists(/databases/$(database)/documents/$(path));
+    }
+    
+    // Helper function to check if request has all required fields
+    function hasRequiredFields(requiredFields) {
+      return request.resource.data.keys().hasAll(requiredFields);
+    }
+    
+    // Users collection rules
+    match /users/{userId} {
+      // Allow read of own profile or if admin
+      allow read: if isOwner(userId);
+      
+      // Allow create/update of own profile
+      allow create, update: if isOwner(userId);
+      
+      // Allow delete only for own profile
+      allow delete: if isOwner(userId);
+    }
+    
+    // Streaks collection rules
+    match /streaks/{userId} {
+      // Allow read of own streaks or public leaderboard data
+      allow read: if isAuthenticated();
+      
+      // Allow create/update of own streaks
+      allow create, update: if isOwner(userId) && 
+                             hasRequiredFields(['currentStreak', 'highestStreak']);
+      
+      // No one can delete streak records
+      allow delete: if false;
+    }
+    
+    // Game results collection rules
+    match /game_results/{resultId} {
+      // Allow read of own game results
+      allow read: if isAuthenticated() && 
+                   request.auth.uid == resource.data.userId;
+      
+      // Allow create of own game results
+      allow create: if isAuthenticated() && 
+                     request.resource.data.userId == request.auth.uid &&
+                     hasRequiredFields(['userId', 'score', 'correctAnswers', 'totalQuestions', 'gameMode']);
+      
+      // No updates to game results
+      allow update: if false;
+      
+      // No one can delete game results
+      allow delete: if false;
+    }
+    
+    // Default deny all other operations
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
