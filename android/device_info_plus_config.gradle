@@ -1,0 +1,13 @@
+// This file configures the device_info_plus plugin to use Java 8
+project.afterEvaluate {
+    tasks.withType(JavaCompile) {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+    
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile) {
+        kotlinOptions {
+            jvmTarget = "1.8"
+        }
+    }
+}

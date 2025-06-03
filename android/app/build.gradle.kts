@@ -1,44 +1,96 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id("kotlin-kapt")
+    id("com.google.gms.google-services") // If using Firebase
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+// Use Java 8 compatibility for all tasks to match Flutter plugins
+tasks.withType<JavaCompile>().configureEach {
+    sourceCompatibility = JavaVersion.VERSION_1_8.toString()
+    targetCompatibility = JavaVersion.VERSION_1_8.toString()
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
 }
 
 android {
     namespace = "com.medstreak.medstreak"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
-
+    compileSdk = 35
+    
+    // Set NDK version required by Firebase and other plugins
+    ndkVersion = "27.0.12077973"
+    
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        // Flag to enable support for the new language APIs
+        isCoreLibraryDesugaringEnabled = true
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.medstreak.medstreak"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        minSdk = 21
+        targetSdk = 35
+        versionCode = 1
+        versionName = "1.0.0"
+        
+        // Enable multidex support
+        multiDexEnabled = true
+        
+        // Enable vector drawable support
+        vectorDrawables.useSupportLibrary = true
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // Enable code shrinking and obfuscation
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
             signingConfig = signingConfigs.getByName("debug")
         }
+        debug {
+            // Enable test coverage in debug builds
+            isTestCoverageEnabled = true
+            // Removed applicationIdSuffix to match Firebase configuration
+        }
     }
+    
+    // Enable view binding
+    buildFeatures {
+        viewBinding = true
+        buildConfig = true
+    }
+    
+    // Configure Java 11 compatibility is already set above
 }
 
 flutter {
     source = "../.."
+}
+
+// Add core library desugaring for Java 8+ APIs
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    
+    // Add other dependencies here if needed
+    implementation("androidx.multidex:multidex:2.0.1")
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0")) // If using Firebase
+    
+    // Add testing dependencies
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 }
